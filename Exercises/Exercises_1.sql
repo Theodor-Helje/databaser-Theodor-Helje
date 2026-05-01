@@ -50,3 +50,48 @@ FROM everyloop.dbo.Elements;
 DELETE FROM everyloop.dbo.ElementsCopy
 WHERE Name in ('Erbium', 'Helium', 'Nitrogen', 'Platinum', 'Selenium')
     OR LEFT(Name, 1) IN ('d', 'k', 'm', 'o', 'u');
+
+
+
+--e
+SELECT
+    Symbol,
+    Name,
+    CASE
+        WHEN SUBSTRING(Name, 1, LEN(Symbol)) = Symbol THEN 'Yes'
+        ELSE 'No'
+    END as SameName
+FROM everyloop.dbo.Elements
+
+
+--f
+DROP TABLE IF EXISTS everyloop.dbo.ColorsCopy;
+
+SELECT Name, Red, Green, Blue
+INTO everyloop.dbo.ColorsCopy
+FROM everyloop.dbo.Colors;
+
+ALTER TABLE everyloop.dbo.ColorsCopy
+ADD HexCode as
+    CONCAT(
+        '#',
+        RIGHT('00' + FORMAT(Red, 'X'), 2),
+        RIGHT('00' + FORMAT(Green, 'X'), 2),
+        RIGHT('00' + FORMAT(Blue, 'X'), 2)
+    );
+
+
+--g
+DROP TABLE IF EXISTS everyloop.dbo.TypesCopy;
+
+SELECT Integer, String
+INTO everyloop.dbo.TypesCopy
+FROM everyloop.dbo.Types;
+
+SELECT
+Integer,
+Integer * 0.01 as Float,
+String,
+DATETIMEFROMPARTS(2019, 1, 1, 9, Integer, 0, 0) as DateTime,
+Integer % 2 as Bool
+FROM everyloop.dbo.TypesCopy
