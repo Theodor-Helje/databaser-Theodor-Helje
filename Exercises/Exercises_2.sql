@@ -13,11 +13,18 @@ FROM everyloop.dbo.Elements
 GROUP BY Period;
 
 
+--b
 SELECT
     Region,
     Country,
     City,
     COUNT(Id) AS Customers
 FROM everyloop.company.customers
-WHERE COUNT(Id) >= 2
-GROUP BY City;
+GROUP BY 
+    Region, 
+    Country,
+    City
+HAVING COUNT(Id) >= 2;
+
+
+--c
