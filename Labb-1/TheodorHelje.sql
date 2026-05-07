@@ -141,8 +141,7 @@ JOIN [everyloop].[company].[categories] categories
 GO
 
 SELECT --work in progress
-    employee.[Employeeid] AS [ID],
-    names.[FirstName] + ' ' + names.[LastName] AS [Name],
+    COUNT(employee.[Employeeid]) AS [Employees],
     regions.[RegionDescription] AS [Region]
 FROM [everyloop].[company].[employee_territory] employee
 JOIN [everyloop].[company].[territories] territories
@@ -151,4 +150,4 @@ JOIN [everyloop].[company].[regions] regions
     ON territories.[RegionId] = regions.[Id]
 JOIN [everyloop].[company].[employees] names
     ON employee.[EmployeeId] = names.[Id]
-GROUP BY employee.[EmployeeId], names.[FirstName], names.[LastName], regions.[RegionDescription]
+GROUP BY regions.[RegionDescription], employee.[EmployeeId]
