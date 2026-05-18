@@ -2,8 +2,11 @@ USE bokhandel;
 GO
 
 
+DROP TABLE IF EXISTS [bokhandel].[dbo].[LagerSaldo];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Böcker];
+DROP TABLE IF EXISTS [bokhandel].[dbo].[Förlag];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Författare];
+DROP TABLE IF EXISTS [bokhandel].[dbo].[Anställda];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Butiker];
 
 
@@ -16,13 +19,20 @@ CREATE TABLE Författare(
 );
 
 
+CREATE TABLE Förlag(
+    [ID] INT IDENTITY(1, 1) PRIMARY KEY,
+    [Namn] NVARCHAR(MAX) NOT NULL
+);
+
+
 CREATE TABLE Böcker(
     [ISBN13] CHAR(13) PRIMARY KEY,
     [Titel] VARCHAR(MAX) NOT NULL,
     [Språk] VARCHAR(MAX) NOT NULL,
     [Pris] DECIMAL(8, 2),
     [Utgivningsdatum] DATE NOT NULL,
-    [FörfattareID] INT FOREIGN KEY REFERENCES Författare(ID)
+    [FörfattareID] INT FOREIGN KEY REFERENCES Författare(ID),
+    [FörlagID] INT FOREIGN KEY REFERENCES Förlag(ID)
 );
 
 
@@ -41,4 +51,13 @@ CREATE TABLE LagerSaldo(
     [ISBN] CHAR(13) FOREIGN KEY REFERENCES Böcker(ISBN13),
     [Antal] INT CHECK ([Antal] >= 0) DEFAULT 0,
     PRIMARY KEY ([ButikId], [ISBN])
+);
+
+
+CREATE TABLE Anställda(
+    [ID] INT IDENTITY(1, 1) PRIMARY KEY,
+    [Förnamn] NVARCHAR(MAX) NOT NULL,
+    [Efternamn] NVARCHAR(MAX) NOT NULL,
+    [Titel] NVARCHAR(MAX) NOT NULL,
+    [ButikId] INT FOREIGN KEY REFERENCES Butiker(ID)
 );
