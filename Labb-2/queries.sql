@@ -2,7 +2,7 @@ USE bokhandel;
 GO
 
 
-DROP VIEW IF EXISTS TitlarPerFörfattare;
+DROP VIEW IF EXISTS [TitlarPerFörfattare];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[OrderDetaljer]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Ordrar]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Anställda]; --övr
@@ -96,7 +96,12 @@ GO
 
 
 
-CREATE VIEW TitlarPerFörfattare AS
+CREATE VIEW TitlarPerFörfattare AS --lägg till antal böcker [Titlar] och totalt pris av alla sådana böcker [Lagervärde]
 SELECT
-    CONCAT(f.Förnamn, ' ', f.Efternamn) AS [Namn]
+    CONCAT([f].[Förnamn], ' ', [f].[Efternamn]) AS [Namn],
+    DATEDIFF(YEAR, [f].[Födelsedatum], GETDATE()) -
+        CASE
+            WHEN DATEADD(YEAR, DATEDIFF(YEAR, [f].[Efternamn], GETDATE()), [f].[Födelsedatum]) > GETDATE()
+                THEN 1 ELSE 0
+        END AS [Ålder]
 FROM [bokhandel].[dbo].[Författare] f
