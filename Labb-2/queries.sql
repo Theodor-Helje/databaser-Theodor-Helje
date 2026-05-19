@@ -2,15 +2,17 @@ USE bokhandel;
 GO
 
 
-DROP TABLE IF EXISTS [bokhandel].[dbo].[OrderDetaljer];
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Ordrar];
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Anställda];
+DROP VIEW IF EXISTS TitlarPerFörfattare;
+DROP TABLE IF EXISTS [bokhandel].[dbo].[OrderDetaljer]; --övr
+DROP TABLE IF EXISTS [bokhandel].[dbo].[Ordrar]; --övr
+DROP TABLE IF EXISTS [bokhandel].[dbo].[Anställda]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[LagerSaldo];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Böcker];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Butiker];
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Kunder];
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Förlag];
+DROP TABLE IF EXISTS [bokhandel].[dbo].[Kunder]; --övr
+DROP TABLE IF EXISTS [bokhandel].[dbo].[Förlag]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Författare];
+GO
 
 
 
@@ -82,6 +84,7 @@ CREATE TABLE Ordrar( --övr
     [Skickat] DATE
 );
 
+
 CREATE TABLE OrderDetaljer( --övr
     [OrderID] INT FOREIGN KEY REFERENCES Ordrar(ID),
     [BokID] CHAR(13) FOREIGN KEY REFERENCES Böcker(ISBN13),
@@ -89,3 +92,11 @@ CREATE TABLE OrderDetaljer( --övr
     [Kostnad] DECIMAL(10, 2), --lägg till automatiskt i insert query sen
     PRIMARY KEY ([OrderID], [BokID])
 );
+GO
+
+
+
+CREATE VIEW TitlarPerFörfattare AS
+SELECT
+    CONCAT(f.Förnamn, ' ', f.Efternamn) AS [Namn]
+FROM [bokhandel].[dbo].[Författare] f
