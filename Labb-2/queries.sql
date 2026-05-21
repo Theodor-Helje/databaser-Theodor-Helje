@@ -1,7 +1,7 @@
 USE bokhandel;
 GO
 
-
+-- BARA TESTSYFTE, TA BORT VID RIKTIG ANVÄNDNING
 DROP PROCEDURE IF EXISTS [FlyttaBok];
 DROP VIEW IF EXISTS [TitlarPerFörfattare];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[OrderDetaljer]; --övr
