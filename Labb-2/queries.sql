@@ -2,6 +2,7 @@ USE bokhandel;
 GO
 
 
+DROP PROCEDURE IF EXISTS [FlyttaBok];
 DROP VIEW IF EXISTS [TitlarPerFörfattare];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[OrderDetaljer]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Ordrar]; --övr
@@ -96,12 +97,101 @@ GO
 
 
 
-CREATE VIEW TitlarPerFörfattare AS --lägg till antal böcker [Titlar] och totalt pris av alla sådana böcker [Lagervärde]
+CREATE VIEW TitlarPerFörfattare AS
 SELECT
     CONCAT([f].[Förnamn], ' ', [f].[Efternamn]) AS [Namn],
     DATEDIFF(YEAR, [f].[Födelsedatum], GETDATE()) -
         CASE
             WHEN DATEADD(YEAR, DATEDIFF(YEAR, [f].[Efternamn], GETDATE()), [f].[Födelsedatum]) > GETDATE()
                 THEN 1 ELSE 0
-        END AS [Ålder]
-FROM [bokhandel].[dbo].[Författare] f
+        END AS [Ålder],
+    COUNT([b].[Titel]) AS [Titlar],
+    SUM([b].[pris] * [l].[Antal]) AS [Lagervärde]
+FROM [bokhandel].[dbo].[Författare] [f]
+JOIN [bokhandel].[dbo].[Böcker] [b]
+    ON [f].[ID] = [b].[FörfattareID]
+JOIN [bokhandel].[dbo].[LagerSaldo] [l]
+    ON [l].[ISBN] = [b].[ISBN13]
+GROUP BY [f].[ID], [f].[Efternamn], [f].[Förnamn], [f].[Födelsedatum];
+GO
+
+
+
+CREATE PROCEDURE FlyttaBok(
+    @IdFrån INT,
+    @IdTill INT,
+    @ISBN CHAR(13),
+    @Antal INT = 1
+)
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+
+        BEGIN TRANSACTION;
+
+            IF @IdFrån = @IdTill 
+                BEGIN
+                    ;THROW 50000, 'cannot move books to the same store', 1;
+                END
+
+            IF @Antal <= 0 
+                BEGIN
+                    ;THROW 50000, 'cannot move less than 1 book', 2;
+                END
+
+            IF NOT EXISTS (SELECT 1 FROM [Butiker] WHERE [ID] = @IdFrån) 
+                BEGIN
+                    ;THROW 50000, 'cannot move book from non existant store', 3;
+                END
+
+            IF NOT EXISTS (SELECT 1 FROM [Butiker] WHERE [ID] = @IdTill) 
+                BEGIN
+                    ;THROW 50000, 'cannot move book to non existant store', 4;
+                END
+
+            IF NOT EXISTS (SELECT 1 FROM [LagerSaldo] WITH (XLOCK, ROWLOCK) WHERE [ISBN] = @ISBN AND [Antal] >= @Antal AND [ButikId] = @IdFrån) 
+                BEGIN
+                    ;THROW 50000, 'cannot move books that dont exist', 5;
+                END
+
+            --begin transaction
+
+            UPDATE [LagerSaldo]
+            SET [Antal] = [Antal] - @Antal
+            WHERE [ButikId] = @IdFrån
+                AND [ISBN] = @ISBN;
+
+
+            UPDATE [LagerSaldo]
+            SET [Antal] = [Antal] + @Antal
+            WHERE [ButikId] = @IdTill
+                AND [ISBN] = @ISBN;
+
+            IF @@ROWCOUNT = 0
+                BEGIN
+                    INSERT INTO [LagerSaldo] ([ButikId], [ISBN], [Antal])
+                    VALUES (@IdTill, @ISBN, @Antal);
+                END
+            
+            DELETE FROM LagerSaldo
+            WHERE ButikID = @IdFrån
+                AND ISBN = @ISBN
+                AND Antal = 0;
+
+        COMMIT TRANSACTION;
+    
+    END TRY
+
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        
+        THROW;
+    
+    END CATCH
+
+END
