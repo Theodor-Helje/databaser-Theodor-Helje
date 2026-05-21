@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS [bokhandel].[dbo].[Anställda]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[LagerSaldo];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Böcker];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Butiker];
+DROP TABLE IF EXISTS [bokhandel].[dbo].[Adresser]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Kunder]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Förlag]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Författare];
@@ -19,39 +20,44 @@ GO
 
 CREATE TABLE Författare(
     [ID] INT IDENTITY(1, 1) PRIMARY KEY,
-    [Förnamn] NVARCHAR(MAX),
-    [Efternamn] NVARCHAR(MAX),
+    [Förnamn] NVARCHAR(100),
+    [Efternamn] NVARCHAR(100),
     [Födelsedatum] DATE
 );
 
 
 CREATE TABLE Förlag( --övr
     [ID] INT IDENTITY(1, 1) PRIMARY KEY,
-    [Namn] NVARCHAR(MAX) NOT NULL
+    [Namn] NVARCHAR(100) NOT NULL
 );
 
 
 CREATE TABLE Kunder( --övr
     [ID] INT IDENTITY(1, 1) PRIMARY KEY, --identity tills kund-id-standard är bestämd
-    [UserName] NVARCHAR(MAX) NOT NULL,
-    [EmailAdress] NVARCHAR(MAX) CHECK ([EmailAdress] LIKE '%@%')
+    [UserName] NVARCHAR(100) NOT NULL,
+    [EmailAdress] NVARCHAR(100) CHECK ([EmailAdress] LIKE '%@%')
+);
+
+
+CREATE TABLE Adresser(
+    [Postnummer] INT PRIMARY KEY,
+    [LAND] NVARCHAR(100),
+    [Stad] NVARCHAR(100)
 );
 
 
 CREATE TABLE Butiker(
     [ID] INT IDENTITY(1, 1) PRIMARY KEY,
-    [Butiksnamn] VARCHAR(MAX) NOT NULL,
-    [Land] VARCHAR(MAX) NOT NULL,
-    [STAD] VARCHAR NOT NULL,
-    [Adress] VARCHAR(MAX) NOT NULL,
-    [Postnummer] VARCHAR(MAX) NOT NULL
+    [Butiksnamn] NVARCHAR(100) NOT NULL,
+    [Adress] NVARCHAR(200) NOT NULL,
+    [Postnummer] INT FOREIGN KEY REFERENCES Adresser(Postnummer)
 );
 
 
 CREATE TABLE Böcker(
     [ISBN13] CHAR(13) PRIMARY KEY,
-    [Titel] VARCHAR(MAX) NOT NULL,
-    [Språk] VARCHAR(MAX) NOT NULL,
+    [Titel] NVARCHAR(100) NOT NULL,
+    [Språk] NVARCHAR(100) NOT NULL,
     [Pris] DECIMAL(8, 2),
     [Utgivningsdatum] DATE NOT NULL,
     [FörfattareID] INT FOREIGN KEY REFERENCES Författare(ID),
@@ -69,9 +75,9 @@ CREATE TABLE LagerSaldo(
 
 CREATE TABLE Anställda( --övr
     [ID] INT IDENTITY(1, 1) PRIMARY KEY,
-    [Förnamn] NVARCHAR(MAX) NOT NULL,
-    [Efternamn] NVARCHAR(MAX) NOT NULL,
-    [Titel] NVARCHAR(MAX) NOT NULL,
+    [Förnamn] NVARCHAR(100) NOT NULL,
+    [Efternamn] NVARCHAR(100) NOT NULL,
+    [Arbetstitel] NVARCHAR(100) NOT NULL,
     [ButikId] INT FOREIGN KEY REFERENCES Butiker(ID)
 );
 
@@ -80,7 +86,7 @@ CREATE TABLE Ordrar( --övr
     [ID] INT IDENTITY(1, 1) PRIMARY KEY,
     [KundID] INT FOREIGN KEY REFERENCES Kunder(ID),
     [AnställdID] INT FOREIGN KEY REFERENCES Anställda(ID),
-    [Adress] NVARCHAR(MAX) NOT NULL,
+    [Adress] NVARCHAR(200) NOT NULL,
     [Beställt] DATE NOT NULL,
     [Skickat] DATE
 );
@@ -195,3 +201,8 @@ BEGIN
     END CATCH
 
 END
+GO
+
+
+
+--VY: 
