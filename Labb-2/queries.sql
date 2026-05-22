@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS [bokhandel].[dbo].[OrderDetaljer]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Ordrar]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Anställda]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[LagerSaldo];
+DROP TABLE IF EXISTS [bokhandel].[dbo].[FörfattareBokJunktion]; --junktion
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Böcker];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Butiker];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Adresser]; --övr
@@ -40,7 +41,7 @@ CREATE TABLE Kunder( --övr
 
 
 CREATE TABLE Adresser(
-    [Postnummer] INT PRIMARY KEY,
+    [Postnummer] NVARCHAR(20) PRIMARY KEY,
     [LAND] NVARCHAR(100),
     [Stad] NVARCHAR(100)
 );
@@ -50,24 +51,30 @@ CREATE TABLE Butiker(
     [ID] INT IDENTITY(1, 1) PRIMARY KEY,
     [Butiksnamn] NVARCHAR(100) NOT NULL,
     [Adress] NVARCHAR(200) NOT NULL,
-    [Postnummer] INT FOREIGN KEY REFERENCES Adresser(Postnummer)
+    [Postnummer] NVARCHAR(20) FOREIGN KEY REFERENCES Adresser(Postnummer)
 );
 
 
 CREATE TABLE Böcker(
-    [ISBN13] CHAR(13) PRIMARY KEY,
+    [ISBN] CHAR(13) PRIMARY KEY,
     [Titel] NVARCHAR(100) NOT NULL,
     [Språk] NVARCHAR(100) NOT NULL,
     [Pris] DECIMAL(8, 2),
     [Utgivningsdatum] DATE NOT NULL,
-    [FörfattareID] INT FOREIGN KEY REFERENCES Författare(ID),
     [FörlagID] INT FOREIGN KEY REFERENCES Förlag(ID)
+);
+
+
+CREATE TABLE FörfattareBokJunktion(
+    [FörfattareID] INT FOREIGN KEY REFERENCES Författare(ID),
+    [ISBN] CHAR(13) FOREIGN KEY REFERENCES Böcker(ISBN),
+    PRIMARY KEY ([FörfattareID], [ISBN])
 );
 
 
 CREATE TABLE LagerSaldo(
     [ButikId] INT FOREIGN KEY REFERENCES Butiker(ID),
-    [ISBN] CHAR(13) FOREIGN KEY REFERENCES Böcker(ISBN13),
+    [ISBN] CHAR(13) FOREIGN KEY REFERENCES Böcker(ISBN),
     [Antal] INT CHECK ([Antal] >= 0) DEFAULT 0,
     PRIMARY KEY ([ButikId], [ISBN])
 );
@@ -94,7 +101,7 @@ CREATE TABLE Ordrar( --övr
 
 CREATE TABLE OrderDetaljer( --övr
     [OrderID] INT FOREIGN KEY REFERENCES Ordrar(ID),
-    [BokID] CHAR(13) FOREIGN KEY REFERENCES Böcker(ISBN13),
+    [BokID] CHAR(13) FOREIGN KEY REFERENCES Böcker(ISBN),
     [Antal] INT NOT NULL CHECK ([Antal] > 0),
     [Kostnad] DECIMAL(10, 2), --lägg till automatiskt i insert query sen
     PRIMARY KEY ([OrderID], [BokID])
@@ -108,16 +115,18 @@ SELECT
     CONCAT([f].[Förnamn], ' ', [f].[Efternamn]) AS [Namn],
     DATEDIFF(YEAR, [f].[Födelsedatum], GETDATE()) -
         CASE
-            WHEN DATEADD(YEAR, DATEDIFF(YEAR, [f].[Efternamn], GETDATE()), [f].[Födelsedatum]) > GETDATE()
+            WHEN DATEADD(YEAR, DATEDIFF(YEAR, [f].[Födelsedatum], GETDATE()), [f].[Födelsedatum]) > GETDATE()
                 THEN 1 ELSE 0
         END AS [Ålder],
     COUNT([b].[Titel]) AS [Titlar],
     SUM([b].[pris] * [l].[Antal]) AS [Lagervärde]
 FROM [bokhandel].[dbo].[Författare] [f]
+JOIN [bokhandel].[dbo].[FörfattareBokJunktion] [junktion]
+    ON [junktion].[FörfattareID] = [f].[ID]
 JOIN [bokhandel].[dbo].[Böcker] [b]
-    ON [f].[ID] = [b].[FörfattareID]
+    ON [b].[ISBN] = [junktion].[ISBN]
 JOIN [bokhandel].[dbo].[LagerSaldo] [l]
-    ON [l].[ISBN] = [b].[ISBN13]
+    ON [l].[ISBN] = [b].[ISBN]
 GROUP BY [f].[ID], [f].[Efternamn], [f].[Förnamn], [f].[Födelsedatum];
 GO
 
