@@ -155,11 +155,11 @@ VALUES
    ORDRAR
    ========================= */
 INSERT INTO Ordrar
-(KundID, AnställdID, Adress, Beställt, Skickat)
+(KundID, AnställdID, ButikID, Adress, Beställt, Skickat)
 VALUES
-(1, 1, 'Testgatan 1, Stockholm', '2024-05-01', '2024-05-03'),
-(2, 3, 'Exempelvägen 5, Göteborg', '2024-05-02', '2024-05-04'),
-(3, 4, 'Demogatan 9, Malmö', '2024-05-05', NULL);
+(1, 1, 1, 'Testgatan 1, Stockholm', '2024-05-01', '2024-05-03'),
+(2, 3, 2, 'Exempelvägen 5, Göteborg', '2024-05-02', '2024-05-04'),
+(3, 4, 3, 'Demogatan 9, Malmö', '2024-05-05', NULL);
 
 
 /* =========================

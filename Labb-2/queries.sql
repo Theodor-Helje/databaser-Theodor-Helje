@@ -4,6 +4,7 @@ GO
 -- BARA TESTSYFTE, TA BORT VID RIKTIG ANVÄNDNING
 DROP PROCEDURE IF EXISTS [FlyttaBok];
 DROP VIEW IF EXISTS [TitlarPerFörfattare];
+DROP VIEW IF EXISTS [BeställningsData];
 DROP TABLE IF EXISTS [bokhandel].[dbo].[OrderDetaljer]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Ordrar]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Anställda]; --övr
@@ -15,7 +16,7 @@ DROP TABLE IF EXISTS [bokhandel].[dbo].[Adresser]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Kunder]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Förlag]; --övr
 DROP TABLE IF EXISTS [bokhandel].[dbo].[Författare];
-GO
+GO 
 
 
 
@@ -93,6 +94,7 @@ CREATE TABLE Ordrar( --övr
     [ID] INT IDENTITY(1, 1) PRIMARY KEY,
     [KundID] INT FOREIGN KEY REFERENCES Kunder(ID),
     [AnställdID] INT FOREIGN KEY REFERENCES Anställda(ID),
+    [ButikID] INT FOREIGN KEY REFERENCES Butiker(ID),
     [Adress] NVARCHAR(200) NOT NULL,
     [Beställt] DATE NOT NULL,
     [Skickat] DATE
@@ -214,4 +216,18 @@ GO
 
 
 
---VY: 
+--Övrig vy: 
+-- Ger bokhandeln / kedjan av bokhandlar inblick i hur olika butiker presterar när det kommer till beställningar
+CREATE VIEW BeställningsData AS
+SELECT
+    [b].[Butiksnamn] AS [Butik],
+    SUM([od].[Antal]) AS [Antal böcker],
+    SUM([od].[Kostnad]) AS [intäkter],
+    COUNT(DISTINCT [o].[KundID]) AS [Antal kunder]
+FROM [bokhandel].[dbo].[Ordrar] [o]
+JOIN [bokhandel].[dbo].[butiker] [b]
+    ON [b].[ID] = [o].[ButikID]
+JOIN [bokhandel].[dbo].[OrderDetaljer] [od]
+    ON [od].[OrderID] = [o].[ID]
+GROUP BY [b].[Butiksnamn];
+GO
