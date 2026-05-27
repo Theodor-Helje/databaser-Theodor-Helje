@@ -1,25 +1,28 @@
 USE bokhandel;
 GO
 
+
 -- BARA TESTSYFTE, TA BORT VID RIKTIG ANVÄNDNING
 DROP PROCEDURE IF EXISTS [FlyttaBok];
+DROP VIEW IF EXISTS [BokSök];
 DROP VIEW IF EXISTS [TitlarPerFörfattare];
 DROP VIEW IF EXISTS [BeställningsData];
-DROP TABLE IF EXISTS [bokhandel].[dbo].[OrderDetaljer]; --övr
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Ordrar]; --övr
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Anställda]; --övr
-DROP TABLE IF EXISTS [bokhandel].[dbo].[LagerSaldo];
-DROP TABLE IF EXISTS [bokhandel].[dbo].[FörfattareBokJunktion]; --junktion
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Böcker];
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Butiker];
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Adresser]; --övr
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Kunder]; --övr
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Förlag]; --övr
-DROP TABLE IF EXISTS [bokhandel].[dbo].[Författare];
-GO 
+DROP TABLE IF EXISTS [dbo].[OrderDetaljer]; --övr
+DROP TABLE IF EXISTS [dbo].[Ordrar]; --övr
+DROP TABLE IF EXISTS [dbo].[Anställda]; --övr
+DROP TABLE IF EXISTS [dbo].[LagerSaldo];
+DROP TABLE IF EXISTS [dbo].[FörfattareBokJunktion]; --junktion
+DROP TABLE IF EXISTS [dbo].[Böcker];
+DROP TABLE IF EXISTS [dbo].[Butiker];
+DROP TABLE IF EXISTS [dbo].[Adresser]; --övr
+DROP TABLE IF EXISTS [dbo].[Kunder]; --övr
+DROP TABLE IF EXISTS [dbo].[Förlag]; --övr
+DROP TABLE IF EXISTS [dbo].[Författare];
+GO
 
 
 
+-- skapande av tabeller
 CREATE TABLE Författare(
     [ID] INT IDENTITY(1, 1) PRIMARY KEY,
     [Förnamn] NVARCHAR(100),
@@ -112,6 +115,7 @@ GO
 
 
 
+-- vy, titlar per författare enligt uppgift
 CREATE VIEW TitlarPerFörfattare AS
 SELECT
     CONCAT([f].[Förnamn], ' ', [f].[Efternamn]) AS [Namn],
@@ -122,18 +126,19 @@ SELECT
         END AS [Ålder],
     COUNT([b].[Titel]) AS [Titlar],
     SUM([b].[pris] * [l].[Antal]) AS [Lagervärde]
-FROM [bokhandel].[dbo].[Författare] [f]
-JOIN [bokhandel].[dbo].[FörfattareBokJunktion] [junktion]
+FROM [dbo].[Författare] [f]
+JOIN [dbo].[FörfattareBokJunktion] [junktion]
     ON [junktion].[FörfattareID] = [f].[ID]
-JOIN [bokhandel].[dbo].[Böcker] [b]
+JOIN [dbo].[Böcker] [b]
     ON [b].[ISBN] = [junktion].[ISBN]
-JOIN [bokhandel].[dbo].[LagerSaldo] [l]
+JOIN [dbo].[LagerSaldo] [l]
     ON [l].[ISBN] = [b].[ISBN]
 GROUP BY [f].[ID], [f].[Efternamn], [f].[Förnamn], [f].[Födelsedatum];
 GO
 
 
 
+-- procedure for att säkert flytta bok från ett lager till ett annat
 CREATE PROCEDURE FlyttaBok(
     @IdFrån INT,
     @IdTill INT,
@@ -216,18 +221,70 @@ GO
 
 
 
---Övrig vy: 
--- Ger bokhandeln / kedjan av bokhandlar inblick i hur olika butiker presterar när det kommer till beställningar
+-- Övrig vy: 
+-- Ger bokhandeln / kedjan av bokhandlar inblick i hur olika butiker presterar när det kommer till beställningar vilket är klart viktigt i analys av en butiks prestation
 CREATE VIEW BeställningsData AS
 SELECT
     [b].[Butiksnamn] AS [Butik],
     SUM([od].[Antal]) AS [Antal böcker],
     SUM([od].[Kostnad]) AS [intäkter],
     COUNT(DISTINCT [o].[KundID]) AS [Antal kunder]
-FROM [bokhandel].[dbo].[Ordrar] [o]
-JOIN [bokhandel].[dbo].[butiker] [b]
+FROM [dbo].[Ordrar] [o]
+JOIN [dbo].[butiker] [b]
     ON [b].[ID] = [o].[ButikID]
-JOIN [bokhandel].[dbo].[OrderDetaljer] [od]
+JOIN [dbo].[OrderDetaljer] [od]
     ON [od].[OrderID] = [o].[ID]
 GROUP BY [b].[Butiksnamn];
+GO
+
+
+
+-- vy för sök-program
+CREATE VIEW BokSök AS
+SELECT
+    [b].[ISBN],
+    [b].[Titel],
+    [s].[Butiksnamn],
+    [l].[Antal]
+FROM [dbo].[Böcker] [b]
+JOIN [dbo].[LagerSaldo] [l]
+    ON [b].[ISBN] = [l].[ISBN]
+JOIN [dbo].[Butiker] [s]
+    ON [s].[ID] = [l].[ButikId];
+GO
+
+
+
+-- skapa user med roll och login
+USE master;
+GO
+
+IF EXISTS (SELECT 1 FROM [sys].[server_principals] WHERE name = 'BokSökUser')
+    DROP LOGIN BokSökUser;
+GO
+
+CREATE LOGIN BokSökUser
+WITH PASSWORD = 'ABC123!';
+GO
+
+
+USE bokhandel;
+GO
+
+DROP USER IF EXISTS BokSökUser;
+GO
+
+DROP ROLE IF EXISTS BokSökRoll;
+GO
+
+CREATE USER BokSökUser FOR LOGIN BokSökUser;
+GO
+
+CREATE ROLE BokSökRoll;
+GO
+
+GRANT SELECT ON [dbo].[BokSök] TO BokSökRoll;
+GO
+
+ALTER ROLE BokSökRoll ADD MEMBER BokSökUser;
 GO
